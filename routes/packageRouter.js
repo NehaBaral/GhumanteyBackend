@@ -182,17 +182,18 @@ packageRouter.route('/:packageId/bookings')
             .catch((err) => next(err));
     })
     .post(authenticate.verifyUser, (req, res, next) => {
-        console.log(req)
         Packages.findById(req.params.packageId)
             .then((package) => {
                 if (package != null){
                     req.body.author = req.user._id;
+                    req.body.departureDate = new Date(req.body.departureDate)
                     //package.sellers.push(req.body); // @pushall method not supported mongo 3.5 and above version, yo method deprecated gardeko xa
                     package.bookings = package.bookings.concat([req.body]); // So, use concat method instead.
                     package.save()
                         .then((package) => {
                             Packages.findById(package._id)
-                            .then((package) => {
+                            .populate('bookings.author')
+                            .then(async(package) => {                   
                                 res.statusCode = 200;
                                 res.setHeader('Content-Type', 'application/json');
                                 res.json(package);
