@@ -11,6 +11,7 @@ searchRouter.route('/')
     .post((req, res, next) => {
         Packages.find({destination: req.body.destination})
             .then((packages) => {
+                console.log(packages.searchRouter)
                 res.statusCode = 200;
                 res.setHeader('Content-Type', 'application/json');
                 res.json(packages);

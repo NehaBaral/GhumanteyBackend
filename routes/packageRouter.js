@@ -193,6 +193,7 @@ packageRouter.route('/:packageId/bookings')
                         .then((package) => {
                             Packages.findById(package._id)
                             .populate('bookings.author')
+                            .populate('comments.author')
                             .then(async(package) => {                   
                                 res.statusCode = 200;
                                 res.setHeader('Content-Type', 'application/json');
@@ -364,7 +365,9 @@ packageRouter.route('/:packageId/comments')
                     package.save()
                         .then((package) => {
                             Packages.findById(package._id)
-                            .then((package) => {
+                            .populate('bookings.author')
+                            .populate('comments.author')
+                            .then(async(package) => {
                                 res.statusCode = 200;
                                 res.setHeader('Content-Type', 'application/json');
                                 res.json(package);
