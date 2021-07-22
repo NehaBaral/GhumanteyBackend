@@ -12,6 +12,8 @@ agencyPackageRouter.route('/')
     .get(authenticate.verifyUser, authenticate.verifyAgency, (req, res, next) => {
         Packages.find({agency: req.user._id})
         .populate('agency')
+        .populate('bookings.author')
+        .populate('comments.author')
             .then((packages) => {
                 res.statusCode = 200;
                 res.setHeader('Content-Type', 'application/json');
