@@ -89,6 +89,10 @@ const packageSchema = new Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
     },
+    days:{
+        type: String,
+        required:true
+    },
     comments: [ commentSchema ],
     bookings: [ bookingSchema ]
 },{
