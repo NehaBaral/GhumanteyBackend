@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 
 const Packages = require('../models/main');
+const { fileToUrl, addBaseUrlToPackageImage} = require('../utils');
 
 const searchRouter = express.Router();
 
@@ -14,7 +15,7 @@ searchRouter.route('/')
                 console.log(packages.searchRouter)
                 res.statusCode = 200;
                 res.setHeader('Content-Type', 'application/json');
-                res.json(packages);
+                res.json(packages.map(it=>addBaseUrlToPackageImage(it)));
             },
             (err) => next(err))
             .catch((err) => next(err));

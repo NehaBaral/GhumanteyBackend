@@ -1,4 +1,4 @@
-const SERVER_URL = "192.168.1.142:3000"
+const SERVER_URL = "192.168.0.103:3000"
 const fileToUrl = (fileName) => {
     return fileName?`http://${SERVER_URL}/${fileName}`:null
 }
