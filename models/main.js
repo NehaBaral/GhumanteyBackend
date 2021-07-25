@@ -90,8 +90,7 @@ const packageSchema = new Schema({
         ref: 'User'
     },
     days:{
-        type: String,
-        required:true
+        type: String
     },
     comments: [ commentSchema ],
     bookings: [ bookingSchema ]

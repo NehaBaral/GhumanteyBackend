@@ -7,7 +7,8 @@
     "included": "movies",
     "excluded": "food",
     "phone": 98989898989,
-    "email": "sada@sad.com"
+    "email": "sada@sad.com",
+    "days" : "3"
 
 }
 

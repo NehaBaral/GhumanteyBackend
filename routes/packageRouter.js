@@ -118,6 +118,9 @@ packageRouter.route('/:packageId')
                 if(req.body.description) {
                     package.description = req.body.description;
                 }
+                if(req.body.days){
+                    package.days = req.body.days
+                }
                 package.save()
                 .then((package) => {
                     Packages.findById(package._id)
