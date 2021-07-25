@@ -6,6 +6,7 @@ const Packages = require('../models/main');
 var authenticate = require('../authenticate');
 
 const agencyPackageRouter = express.Router();
+const { fileToUrl, addBaseUrlToPackageImage} = require('../utils');
 
 agencyPackageRouter.use(bodyParser.json());
 agencyPackageRouter.route('/')
@@ -17,7 +18,7 @@ agencyPackageRouter.route('/')
             .then((packages) => {
                 res.statusCode = 200;
                 res.setHeader('Content-Type', 'application/json');
-                res.json(packages);
+                res.json(packages.map(it=>addBaseUrlToPackageImage(it)));
             },
             (err) => next(err))
             .catch((err) => next(err));

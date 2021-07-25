@@ -13,6 +13,15 @@ var agencyPackageRouter = require('./routes/agencyPackage');
 var myBookingsRouter = require('./routes/myBookings');
 var authenticate = require('./authenticate');
 var config = require('./config');
+const multer = require("multer");
+const storage = multer.diskStorage({
+  destination: function (req, res, cb) {
+      cb(null, 'uploads/')
+  }
+});
+
+const upload = multer({ storage: storage });
+const fs = require('fs')
 
 
 const mongoose = require('mongoose');
@@ -30,6 +39,7 @@ connect.then((db) => {
 
 var app = express();
 
+
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
@@ -41,6 +51,17 @@ app.use(express.urlencoded({ extended: false }));
 app.use(passport.initialize());
 
 app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'uploads')));
+
+
+app.post('/saveImage',upload.single('file'),(req,res,next)=>{
+    if(req.file){
+      console.log(req.file)
+        res.send({fileName:req.file.filename})
+    }else{
+        res.sendStatus(400)
+    }
+})
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);

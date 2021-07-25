@@ -5,6 +5,7 @@ const mongoose = require('mongoose');
 const Packages = require('../models/main');
 const User = require('../models/user');
 var authenticate = require('../authenticate');
+const { fileToUrl, addBaseUrlToPackageImage} = require('../utils');
 
 const packageRouter = express.Router();
 
@@ -13,15 +14,15 @@ packageRouter.use(bodyParser.json());
 packageRouter.route('/')
     .get((req, res, next) => {
         Packages.find({})
-        .populate('comments.author')
-        .populate('bookings.author')
-        .populate('agency')
+            .populate('comments.author')
+            .populate('bookings.author')
+            .populate('agency')
             .then((packages) => {
                 res.statusCode = 200;
                 res.setHeader('Content-Type', 'application/json');
-                res.json(packages);
+                res.json(packages.map(it => addBaseUrlToPackageImage(it)));
             },
-            (err) => next(err))
+                (err) => next(err))
             .catch((err) => next(err));
     })
     // .post(authenticate.verifyUser, authenticate.verifyAgency ,(req, res, next) => {
@@ -45,12 +46,11 @@ packageRouter.route('/')
         req.body.agency = req.user._id;
         Packages.create(req.body)
             .then((package) => {
-                console.log('Book created: ', package);
                 res.statusCode = 200;
                 res.setHeader('Content-Type', 'application/json');
-                res.json(package);
+                res.json(addBaseUrlToPackageImage(package));
             },
-            (err) => next(err))
+                (err) => next(err))
             .catch((err) => next(err));
     })
     .put(authenticate.verifyUser, authenticate.verifyAgency, (req, res, next) => {
@@ -64,22 +64,22 @@ packageRouter.route('/')
                 res.setHeader('Content-Type', 'application/json');
                 res.json(resp);
             },
-            (err) => next(err))
+                (err) => next(err))
             .catch((err) => next(err));
     });
 
 packageRouter.route('/:packageId')
     .get((req, res, next) => {
         Packages.findById(req.params.packageId)
-        .populate('comments.author')
-        .populate('bookings.author')
-        .populate('agency')
+            .populate('comments.author')
+            .populate('bookings.author')
+            .populate('agency')
             .then((package) => {
                 res.statusCode = 200;
                 res.setHeader('Content-Type', 'application/json');
                 res.json(package);
             },
-            (err) => next(err))
+                (err) => next(err))
             .catch((err) => next(err));
     })
     .post(authenticate.verifyUser, authenticate.verifyAgency, (req, res, next) => {
@@ -88,90 +88,93 @@ packageRouter.route('/:packageId')
     })
     .put(authenticate.verifyUser, authenticate.verifyAgency, (req, res, next) => {
         Packages.findById(req.params.packageId)
-        .then((package) => {
-            if (package != null
-                && package.agency.equals(req.user._id)){
-                if(req.body.name) {
-                    package.name = req.body.name;
+            .then((package) => {
+                console.log()
+                if (package != null
+                    && package.agency.equals(req.user._id)) {
+
+                    if (req.body.name) {
+                        package.name = req.body.name;
+                    }
+                    if (req.body.price) {
+                        package.price = req.body.price;
+                    }
+                    if (req.body.destination) {
+                        package.destination = req.body.destination;
+                    }
+                    if (req.body.iternaries) {
+                        package.iternaries = req.body.iternaries;
+                    }
+                    if (req.body.included) {
+                        package.included = req.body.included;
+                    }
+                    if (req.body.excluded) {
+                        package.excluded = req.body.excluded;
+                    }
+                    if (req.body.phone) {
+                        package.phone = req.body.phone;
+                    }
+                    if (req.body.email) {
+                        package.email = req.body.email;
+                    }
+                    if (req.body.description) {
+                        package.description = req.body.description;
+                    }
+                    if (req.body.days) {
+                        package.days = req.body.days
+                    }
+                    package.image = req.body.fileName
+                    package.save()
+                        .then((package) => {
+                            Packages.findById(package._id)
+                                .populate('agency')
+                                .then((package) => {
+                                    res.statusCode = 200;
+                                    res.setHeader('Content-Type', 'application/json');
+                                    res.json(package);
+                                })
+                        }, (err) => next(err))
                 }
-                if(req.body.price) {
-                    package.price = req.body.price;
+                else {
+                    res.statusCode = 403;
+                    res.end('You are not authorized');
                 }
-                if(req.body.destination) {
-                    package.destination = req.body.destination;
-                }
-                if(req.body.iternaries) {
-                    package.iternaries = req.body.iternaries;
-                }
-                if(req.body.included) {
-                    package.included = req.body.included;
-                }
-                if(req.body.excluded) {
-                    package.excluded = req.body.excluded;
-                }
-                if(req.body.phone) {
-                    package.phone = req.body.phone;
-                }
-                if(req.body.email) {
-                    package.email = req.body.email;
-                }
-                if(req.body.description) {
-                    package.description = req.body.description;
-                }
-                if(req.body.days){
-                    package.days = req.body.days
-                }
-                package.save()
-                .then((package) => {
-                    Packages.findById(package._id)
-                    .populate('agency')
-                    .then((package) => {
-                        res.statusCode = 200;
-                        res.setHeader('Content-Type', 'application/json');
-                        res.json(package);  
-                    })
-                }, (err) => next(err))
-            }
-            else {
-                res.statusCode = 403;
-                res.end('You are not authorized');
-            }
-        }, (err) => next(err))
+            }, (err) => next(err))
     })
     .delete(authenticate.verifyUser, authenticate.verifyAgency, (req, res, next) => {
 
         Packages.findById(req.params.packageId)
-        .then((package) => {
-            if (package != null 
-                && package.agency.equals(req.user._id)){
+            .then((package) => {
+                if (package != null
+                    && package.agency.equals(req.user._id)) {
                     package.remove();
                     package.save()
-                    .then((resp) => {
-                        res.statusCode = 200;
-                        res.setHeader('Content-Type', 'application/json');
-                        res.json(resp);
-                    })
+                        .then((resp) => {
+                            res.statusCode = 200;
+                            res.setHeader('Content-Type', 'application/json');
+                            res.json(resp);
+                        })
                 }
-            else if (package == null){
-                err = new Error('package' + req.params.packageId + ' not found!');
-                err.status = 400;
-                return next(err);
-            }
-            else {
-                res.statusCode = 403;
-                res.end('You are not authorized');
-            }
-         }, (err) => next(err))
-         .catch((err) => next(err));
+                else if (package == null) {
+                    err = new Error('package' + req.params.packageId + ' not found!');
+                    err.status = 400;
+                    return next(err);
+                }
+                else {
+                    res.statusCode = 403;
+                    res.end('You are not authorized');
+                }
+            }, (err) => next(err))
+            .catch((err) => next(err));
     });
 
 // PACKAGE BOOKING CODE
 packageRouter.route('/:packageId/bookings')
     .get((req, res, next) => {
         Packages.findById(req.params.packageId)
-        .populate('bookings.author')
+            .populate('bookings.author')
             .then((package) => {
-                if(package != null){
+                if (package != null) {
                     res.statusCode = 200;
                     res.setHeader('Content-Type', 'application/json');
                     res.json(package.bookings);
@@ -187,7 +190,7 @@ packageRouter.route('/:packageId/bookings')
     .post(authenticate.verifyUser, (req, res, next) => {
         Packages.findById(req.params.packageId)
             .then((package) => {
-                if (package != null){
+                if (package != null) {
                     req.body.author = req.user._id;
                     req.body.departureDate = new Date(req.body.departureDate)
                     //package.sellers.push(req.body); // @pushall method not supported mongo 3.5 and above version, yo method deprecated gardeko xa
@@ -195,26 +198,26 @@ packageRouter.route('/:packageId/bookings')
                     package.save()
                         .then((package) => {
                             Packages.findById(package._id)
-                            .populate('bookings.author')
-                            .populate('comments.author')
-                            .then(async(package) => {                   
-                                res.statusCode = 200;
-                                res.setHeader('Content-Type', 'application/json');
-                                res.json(package);
-                            })
+                                .populate('bookings.author')
+                                .populate('comments.author')
+                                .then(async (package) => {
+                                    res.statusCode = 200;
+                                    res.setHeader('Content-Type', 'application/json');
+                                    res.json(package);
+                                })
                             User.findById(req.user._id)
-                            .then((user) => {
-                                user.myBookings = user.myBookings.concat([package._id]);
-                                user.save();
-                            })
-                        }, (err) => next(err));                 
+                                .then((user) => {
+                                    user.myBookings = user.myBookings.concat([package._id]);
+                                    user.save();
+                                })
+                        }, (err) => next(err));
                 }
                 else {
                     err = new Error('Book' + req.params.packageId + ' not found!');
                     err.status = 400;
                     return next(err);
                 }
-            },(err) => next(err))
+            }, (err) => next(err))
             .catch((err) => next(err));
     })
     .put(authenticate.verifyUser, (req, res, next) => {
@@ -225,8 +228,8 @@ packageRouter.route('/:packageId/bookings')
     .delete(authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
         Packages.findById(req.params.packageId)
             .then((package) => {
-                if (package != null){
-                    for (var i = (package.bookings.length -1); i>= 0; i--){
+                if (package != null) {
+                    for (var i = (package.bookings.length - 1); i >= 0; i--) {
                         package.bookings.id(package.bookings[i]._id).remove();
                     }
                     package.save()
@@ -241,21 +244,21 @@ packageRouter.route('/:packageId/bookings')
                     err.status = 400;
                     return next(err);
                 }
-            },(err) => next(err))
+            }, (err) => next(err))
             .catch((err) => next(err));
     });
 
 packageRouter.route('/:packageId/bookings/:bookingId')
     .get((req, res, next) => {
         Packages.findById(req.params.packageId)
-        .populate('bookings.author')
+            .populate('bookings.author')
             .then((package) => {
-                if (package != null && package.bookings.id(req.params.bookingId) != null){
+                if (package != null && package.bookings.id(req.params.bookingId) != null) {
                     res.statusCode = 200;
                     res.setHeader('Content-Type', 'application/json');
                     res.json(package.bookings.id(req.params.bookingId));
                 }
-                else if ( package == null ){
+                else if (package == null) {
                     err = new Error('package' + req.params.packageId + ' not found!');
                     err.status = 400;
                     return next(err);
@@ -277,7 +280,7 @@ packageRouter.route('/:packageId/bookings/:bookingId')
         Packages.findById(req.params.packageId)
             .then((package) => {
                 if (package != null && package.bookings.id(req.params.bookingId) != null
-                && package.bookings.id(req.params.bookingId).author.equals(req.user._id)) {
+                    && package.bookings.id(req.params.bookingId).author.equals(req.user._id)) {
                     if (req.body.booking == false) {
                         package.bookings.id(req.params.bookingId).booking = false;
                     }
@@ -290,12 +293,12 @@ packageRouter.route('/:packageId/bookings/:bookingId')
                     package.save()
                         .then((package) => {
                             Packages.findById(package._id)
-                            .populate('bookings.author')
-                            .then((package) => {
-                                res.statusCode = 200;
-                                res.setHeader('Content-Type', 'application/json');
-                                res.json(package);
-                            })
+                                .populate('bookings.author')
+                                .then((package) => {
+                                    res.statusCode = 200;
+                                    res.setHeader('Content-Type', 'application/json');
+                                    res.json(package);
+                                })
                         }, (err) => next(err));
                 }
                 else if (package == null) {
@@ -313,29 +316,29 @@ packageRouter.route('/:packageId/bookings/:bookingId')
     })
     .delete(authenticate.verifyUser, (req, res, next) => {
         Packages.findById(req.params.packageId)
-        .then((package) => {
-            if(package != null && package.bookings.id(req.params.bookingId) != null
-            && package.bookings.id(req.params.bookingId).author.equals(req.user._id)){
-                package.bookings.id(req.params.bookingId).remove();
-                package.save()
-                .then((resp) => {
-                    res.statusCode = 200;
-                    res.setHeader('Content-Type', 'application/json');
-                    res.json(resp);
-                })
-            }
-            else if ( package == null ){
-                err = new Error('package' + req.params.packageId + ' not found!');
-                err.status = 400;
-                return next(err);
-            }
-            else {
-                err = new Error('Booking' + req.params.bookingId + ' not found!');
-                err.status = 400;
-                return next(err);
-            }
-        }, (err) => next(err))
-        .catch((err) => next(err));
+            .then((package) => {
+                if (package != null && package.bookings.id(req.params.bookingId) != null
+                    && package.bookings.id(req.params.bookingId).author.equals(req.user._id)) {
+                    package.bookings.id(req.params.bookingId).remove();
+                    package.save()
+                        .then((resp) => {
+                            res.statusCode = 200;
+                            res.setHeader('Content-Type', 'application/json');
+                            res.json(resp);
+                        })
+                }
+                else if (package == null) {
+                    err = new Error('package' + req.params.packageId + ' not found!');
+                    err.status = 400;
+                    return next(err);
+                }
+                else {
+                    err = new Error('Booking' + req.params.bookingId + ' not found!');
+                    err.status = 400;
+                    return next(err);
+                }
+            }, (err) => next(err))
+            .catch((err) => next(err));
     });
 
 // PACKAGE COMMENTS CODE
@@ -343,9 +346,9 @@ packageRouter.route('/:packageId/bookings/:bookingId')
 packageRouter.route('/:packageId/comments')
     .get((req, res, next) => {
         Packages.findById(req.params.packageId)
-        .populate('comments.author')
+            .populate('comments.author')
             .then((package) => {
-                if(package != null){
+                if (package != null) {
                     res.statusCode = 200;
                     res.setHeader('Content-Type', 'application/json');
                     res.json(package.comments);
@@ -361,20 +364,20 @@ packageRouter.route('/:packageId/comments')
     .post(authenticate.verifyUser, (req, res, next) => {
         Packages.findById(req.params.packageId)
             .then((package) => {
-                if (package != null){
+                if (package != null) {
                     req.body.author = req.user._id;
                     //package.sellers.push(req.body); // @pushall method not supported mongo 3.5 and above version, yo method deprecated gardeko xa
                     package.comments = package.comments.concat([req.body]); // So, use concat method instead.
                     package.save()
                         .then((package) => {
                             Packages.findById(package._id)
-                            .populate('bookings.author')
-                            .populate('comments.author')
-                            .then(async(package) => {
-                                res.statusCode = 200;
-                                res.setHeader('Content-Type', 'application/json');
-                                res.json(package);
-                            })
+                                .populate('bookings.author')
+                                .populate('comments.author')
+                                .then(async (package) => {
+                                    res.statusCode = 200;
+                                    res.setHeader('Content-Type', 'application/json');
+                                    res.json(package);
+                                })
                         }, (err) => next(err));
                 }
                 else {
@@ -382,7 +385,7 @@ packageRouter.route('/:packageId/comments')
                     err.status = 400;
                     return next(err);
                 }
-            },(err) => next(err))
+            }, (err) => next(err))
             .catch((err) => next(err));
     })
     .put(authenticate.verifyUser, (req, res, next) => {
@@ -393,8 +396,8 @@ packageRouter.route('/:packageId/comments')
     .delete(authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
         Packages.findById(req.params.packageId)
             .then((package) => {
-                if (package != null){
-                    for (var i = (package.comments.length -1); i>= 0; i--){
+                if (package != null) {
+                    for (var i = (package.comments.length - 1); i >= 0; i--) {
                         package.comments.id(package.comments[i]._id).remove();
                     }
                     package.save()
@@ -409,21 +412,21 @@ packageRouter.route('/:packageId/comments')
                     err.status = 400;
                     return next(err);
                 }
-            },(err) => next(err))
+            }, (err) => next(err))
             .catch((err) => next(err));
     });
 
 packageRouter.route('/:packageId/comments/:commentId')
     .get((req, res, next) => {
         Packages.findById(req.params.packageId)
-        .populate('comments.author')
+            .populate('comments.author')
             .then((package) => {
-                if(package != null && package.comments.id(req.params.commentId) != null){
+                if (package != null && package.comments.id(req.params.commentId) != null) {
                     res.statusCode = 200;
                     res.setHeader('Content-Type', 'application/json');
                     res.json(package.comments.id(req.params.commentId));
                 }
-                else if ( package == null ){
+                else if (package == null) {
                     err = new Error('package' + req.params.packageId + ' not found!');
                     err.status = 400;
                     return next(err);
@@ -445,7 +448,7 @@ packageRouter.route('/:packageId/comments/:commentId')
         Packages.findById(req.params.packageId)
             .then((package) => {
                 if (package != null && package.comments.id(req.params.commentId) != null
-                && package.comments.id(req.params.commentId).author.equals(req.user._id)) {
+                    && package.comments.id(req.params.commentId).author.equals(req.user._id)) {
                     if (req.body.comment) {
                         package.comments.id(req.params.commentId).comment = req.body.comment;
                     }
@@ -455,12 +458,12 @@ packageRouter.route('/:packageId/comments/:commentId')
                     package.save()
                         .then((package) => {
                             Packages.findById(package._id)
-                            .populate('comments.author')
-                            .then((package) => {
-                                res.statusCode = 200;
-                                res.setHeader('Content-Type', 'application/json');
-                                res.json(package);
-                            })
+                                .populate('comments.author')
+                                .then((package) => {
+                                    res.statusCode = 200;
+                                    res.setHeader('Content-Type', 'application/json');
+                                    res.json(package);
+                                })
                         }, (err) => next(err));
                 }
                 else if (package == null) {
@@ -478,29 +481,29 @@ packageRouter.route('/:packageId/comments/:commentId')
     })
     .delete(authenticate.verifyUser, (req, res, next) => {
         Packages.findById(req.params.packageId)
-        .then((package) => {
-            if(package != null && package.comments.id(req.params.commentId) != null
-            && package.comments.id(req.params.commentId).author.equals(req.user._id)){
-                package.comments.id(req.params.commentId).remove();
-                package.save()
-                .then((resp) => {
-                    res.statusCode = 200;
-                    res.setHeader('Content-Type', 'application/json');
-                    res.json(resp);
-                })
-            }
-            else if ( package == null ){
-                err = new Error('package' + req.params.packageId + ' not found!');
-                err.status = 400;
-                return next(err);
-            }
-            else {
-                err = new Error('comment' + req.params.commentId + ' not found!');
-                err.status = 400;
-                return next(err);
-            }
-        }, (err) => next(err))
-        .catch((err) => next(err));
+            .then((package) => {
+                if (package != null && package.comments.id(req.params.commentId) != null
+                    && package.comments.id(req.params.commentId).author.equals(req.user._id)) {
+                    package.comments.id(req.params.commentId).remove();
+                    package.save()
+                        .then((resp) => {
+                            res.statusCode = 200;
+                            res.setHeader('Content-Type', 'application/json');
+                            res.json(resp);
+                        })
+                }
+                else if (package == null) {
+                    err = new Error('package' + req.params.packageId + ' not found!');
+                    err.status = 400;
+                    return next(err);
+                }
+                else {
+                    err = new Error('comment' + req.params.commentId + ' not found!');
+                    err.status = 400;
+                    return next(err);
+                }
+            }, (err) => next(err))
+            .catch((err) => next(err));
     });
 
 

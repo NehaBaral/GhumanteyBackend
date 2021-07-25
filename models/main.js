@@ -92,6 +92,9 @@ const packageSchema = new Schema({
     days:{
         type: String
     },
+    image:{ 
+        type: String
+    },
     comments: [ commentSchema ],
     bookings: [ bookingSchema ]
 },{
