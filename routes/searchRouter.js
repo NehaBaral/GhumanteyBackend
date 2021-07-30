@@ -11,6 +11,7 @@ searchRouter.use(bodyParser.json());
 searchRouter.route('/')
     .post((req, res, next) => {
         Packages.find({destination: req.body.destination})
+        .populate('agency')
             .then((packages) => {
                 console.log(packages.searchRouter)
                 res.statusCode = 200;

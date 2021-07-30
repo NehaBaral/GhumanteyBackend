@@ -12,6 +12,7 @@ myBookings.route('/')
     .get(authenticate.verifyUser, (req, res, next) => {
         User.findById(req.user._id)
         .populate('myBookings')
+        .populate('agency')
             .then((user) => {
                 if(user != null){
                     res.statusCode = 200;
